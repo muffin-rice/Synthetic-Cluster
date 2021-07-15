@@ -1,5 +1,7 @@
 from copy import deepcopy
 
+UPDATE_FREQ = 10
+
 class GPU:
     def __init__(self, id : int, total_memory : int):
         self.id = id
@@ -9,6 +11,8 @@ class GPU:
         #job_history[i] is the job history at tick i (could be empty set)
         self.job_history = [] #[{job_id}]
         self.current_jobs = set()
+        self.pause_time = 0
+        self.update_i = UPDATE_FREQ
 
     def __hash__(self):
         return self.id.__hash__()
@@ -19,17 +23,24 @@ class GPU:
 
         return f'GPU {self.id}, RUN job {self.current_jobs}'
 
+    def record_jobs(self):
+        if self.update_i <= 0:
+            self.update_i = UPDATE_FREQ
+            self.job_history.append(deepcopy(self.current_jobs))
+        else:
+            self.update_i -= 1
+
     def tick(self):
-        self.job_history.append(deepcopy(self.current_jobs))
+        if self.pause_time > 0:
+            self.pause_time -= 1
+        self.record_jobs()
 
     def assign_job(self, job_id):
         #TODO: packing
         self.current_jobs.add(job_id)
-        self.status = 1
 
     def remove_job(self, job_id):
         self.current_jobs.remove(job_id)
-        self.status = self.current_jobs != set() #0 if empty set, 1 otherwise
 
     def get_all_unique_jobs(self):
         #returns all distinct job ids that were done
@@ -43,6 +54,11 @@ class GPU:
         except:
             return 0
 
+    def pause(self, time): #pause the GPU for penalty/migration things
+        self.pause_time = time
+
     @property
     def free(self):
-        return self.status
+        if self.pause_time > 0:
+            return False
+        return self.current_jobs == set()
