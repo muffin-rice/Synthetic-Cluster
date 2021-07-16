@@ -25,9 +25,9 @@ class Synthetic_Job_Generator:
         self.df = transform_data(pd.read_csv('data/pd_data.csv', sep=','))
 
     def reset_timer(self):
-        self.time_until_next_job = int(ss.expon.rvs(scale=180))
+        self.time_until_next_job = int(ss.expon.rvs(scale=180)) #mean of 3 minutes is roughly accurate
 
-    def create_job(self, timestamp):
+    def create_job(self, timestamp, get_params = False):
 
         #GPU asked, duration, and time between jobs actually somewhat independent; can naively model so
 
@@ -46,14 +46,19 @@ class Synthetic_Job_Generator:
         else:
             gpu_req = sample_gpu
 
-        new_job = Job(id=self.internal_id, start_time=timestamp, num_iterations=1000000,
-                      user_time_estimates={gpu_req : user_time}, req_gpu=gpu_req,
-                      true_time_rates={gpu_req : true_time})
+        job_params = {
+            'id' : self.internal_id, 'start_time' : timestamp, 'num_iterations' : 1000000,
+            'user_time_estimates' : {gpu_req : user_time}, 'req_gpu' : gpu_req,
+            'true_time_rates' : {gpu_req : true_time}
+        }
 
         self.internal_id += 1
         self.reset_timer()
 
-        return new_job
+        if get_params:
+            return job_params
+
+        return Job(**job_params)
 
     @property
     def job_arrived(self):
