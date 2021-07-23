@@ -5,6 +5,15 @@ import pandas as pd
 import numpy as np
 
 MAX_DURATION = 20000
+#Other jobs would be non DLT jobs, most likely
+JOB_TYPES = ['Transformer', 'VGG', 'ResNet', 'Inception', 'DeepSpeech', 'Other']
+#number of MB in a typical model
+#other jobs should have no model size / little migration because it completes so quickly anyways
+MODEL_SIZE = [2000, 500, 100, 100, 50, 10]
+#GPU Util on 1
+GPU_UTIL = [99, 74, 49, 49, 24, 9]
+#idea is that model size will impact
+JOBS_PER_HOUR = 3.7
 
 def transform_data(df : pd.DataFrame):
     # data in duration, # gpus, # nodes
@@ -59,6 +68,56 @@ class Synthetic_Job_Generator:
             return job_params
 
         return Job(**job_params)
+
+    @property
+    def job_arrived(self):
+        if self.time_until_next_job <= 0:
+            return True
+        else:
+            self.time_until_next_job -= 1
+
+class Synthetic_Job_Generator2: 
+    def __init__(self): 
+        self.internal_id = 1000
+        self.reset_timer() 
+    
+    def reset_timer(self): 
+        self.time_until_next_job = int(ss.poisson.rvs(mu=3600 / JOBS_PER_HOUR))
+
+    def create_job(self, timestamp, get_params = False):
+        duration = 0
+        if random.random() < 0.8: 
+            duration = ss.uniform.rvs(loc = 1.5, scale = 1.5, size = 1)[0]
+        else: 
+            duration = ss.uniform.rvs(loc = 3, scale = 1, size = 1)[0]
+        duration = int(duration * 3600)
+        
+        r = random.random() 
+        num_gpus = 0 
+        if r < .7: 
+            num_gpus = 1
+        elif r < .95: 
+            if random.random() < .5: 
+                num_gpus = 2
+            else: 
+                num_gpus = 4 
+        else: 
+            num_gpus = 8 
+
+        model_type_index = random.randrange(6)
+
+        job_params = {
+            'id' : self.internal_id, 'start_time' : timestamp, 'total_iterations' : 1000000,
+            'pref_gpus' : [num_gpus, num_gpus], 'true_times' : {num_gpus : duration},
+            'memory_usage' : GPU_UTIL[model_type_index], 'model_size' : MODEL_SIZE[model_type_index], 
+            'user_estimates' : {num_gpus : duration}
+        }
+
+        self.internal_id += 1
+        self.reset_timer()
+
+        if get_params:
+            return job_params
 
     @property
     def job_arrived(self):
