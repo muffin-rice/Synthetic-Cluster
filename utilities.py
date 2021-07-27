@@ -1,37 +1,39 @@
-#Utilities for data analysis on cluster 
+#Utilities for data analysis on Cluster object/cluster fields
 import numpy as np
 from cluster import Cluster
+from job import Job, extrapolate_estimate
 
 MINUTES_PER_DAY = (24 * 60)
 MICROSECONDS_PER_MINUTE = (60 * 1000)
 
 def get_all_gpu_utilization(cluster : Cluster):
-    return [gpu.get_gpu_utilization() for gpu in cluster.gpu_array]
+    '''defined as the number of hours that each gpu is used
+    should be used in compound with get_average_factors'''
+    x = []
+    for machine in cluster.machine_array:
+        x += machine.gpu_util_history
+    return x
 
-def get_job_finish_stats(cluster : Cluster):
-    '''
+def get_average_factors(completed_jobs : [Job]):
+    '''gets average factor of every job (excluding 0s)'''
+    x = []
+    for job in completed_jobs:
+        y = []
+        for z in job.allocation_history:
+            if z[1]:
+                y.append(z[1])
 
-    :param cluster:
-    :return: [(start_time, projected_finish_time, true_finish_time)]
-    '''
-    return [(job.start_time, job.est_finish_time, job.finish_time) for job in cluster.finished_jobs]
+        x.append(np.average(y))
 
-def get_utilization_by_time(cluster : Cluster):
-    #cluster
-    total_time = len(cluster.gpu_array[-1].job_history)
-    total_gpus = len(cluster.gpu_array)
-    #avg_gpu_utilization = []
-    #for i in range(total_time):
-#
-    #    x = sum([1 if gpu.job_history[i] else 0 for gpu in cluster.gpu_array])
-    #    avg_gpu_utilization.append(x/total_gpus)
+    return x
 
-    avg_gpu_utilization = [sum([1 if gpu.job_history[i] else 0 for gpu in cluster.gpu_array])/total_gpus for i in range(total_time)]
+def get_FTF(completed_jobs : [Job], jobs_per_hour = 3.7, duration_per_job = 2.5, cluster_gpus = 16):
+    return [job.time_to_finish / extrapolate_estimate(cluster_gpus / jobs_per_hour / duration_per_job, job.true_times)
+            for job in completed_jobs]
 
-    return avg_gpu_utilization
+def get_JCT(completed_jobs : [Job]):
+    return [job.time_to_finish for job in completed_jobs]
 
-def get_fairness_ratios(cluster : Cluster):
-    return [(stat[2]-stat[0]) / (stat[1]-stat[0]) for stat in get_job_finish_stats(cluster)]
 
-def final_time(cluster : Cluster):
-    return
+def get_total_time(completed_jobs : [Job]):
+    return [list(job.true_times.values())[0] for job in completed_jobs]

@@ -50,12 +50,14 @@ class Job:
         id, start_time, total_iterations, pref_gpus, true_times, memory_usage, model_size
 
         self.iter_completed = 0
-        #{Machine : [GPU]}
+        #{Machine : [GPU_id]}
         #the idea is that interserver interference (machines) and intraserver interference (gpus) are independent
         self.gpu_config = {}
         self.time_elapsed = 0
         self.time_to_finish = 0
         self.time_until_free = 0
+        self.allocation_history = []
+        self.update_i = UPDATE_FREQ
 
     def __hash__(self):
         x = f'Job{self.id}'
@@ -78,6 +80,8 @@ class Job:
         #packing factor interference
         if self.num_gpus == 1:
             return 1
+        elif self.num_gpus == 0:
+            return 0
 
         #the "true" factor is the factor that's the slowest (no additional packing factor)
         intraserver_locality = np.min([mach.get_machine_locality_factor(self) for mach in self.gpu_config.keys()])
@@ -99,11 +103,20 @@ class Job:
 
         self.iter_completed += adjusted_iters
 
+    def _record_allocations(self):
+        if self.update_i <= 0:
+            self.update_i = UPDATE_FREQ
+            self.allocation_history.append((self.read_gpu_config, self._get_factors()))
+        else:
+            self.update_i -= 1
+
     def tick(self):
         if self.finished: #should ideally never be true (job should be in finished_jobs in cluster and never tick)
             return
 
         self.time_elapsed += 1
+
+        self._record_allocations()
 
         if self.time_until_free > 0:
             self.time_until_free -= 1
@@ -165,5 +178,5 @@ class Job:
 
     @property
     def read_gpu_config(self):
-        '''gpu config in form of Machine : GPU'''
+        '''gpu config in form of Machine : GPU_id'''
         return self.gpu_config

@@ -7,7 +7,7 @@ PERIOD_OF_JOBS = 20000 #period of timeat which jobs are continuously incoming
 
 if __name__ == '__main__':
     random.seed(1000)
-    jobs = pickle.load(open('data/job_simul_1.pkl', 'rb'))
+    jobs = pickle.load(open('data/Job-Simuls/job_simul_2.pkl', 'rb'))
     cluster = Cluster(num_machines=5)
     current_time = 0
 
@@ -35,7 +35,5 @@ if __name__ == '__main__':
 
     print(current_time)
 
-    pickle.dump(cluster, open('data/test-3.pkl', 'wb'))
-    #test 1: FIFO lease
-    #test 2: FIFO no penalty
-    #test 3: FIFO no lease
+    pickle.dump(cluster, open('data/FIFO-results/test-2.pkl', 'wb'))
+    #test-1 : FIFO, no lease

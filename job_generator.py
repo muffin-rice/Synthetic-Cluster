@@ -13,7 +13,6 @@ MODEL_SIZE = [2000, 500, 100, 100, 50, 10]
 #GPU Util on 1
 GPU_UTIL = [99, 74, 49, 49, 24, 9]
 #idea is that model size will impact
-JOBS_PER_HOUR = 3.7
 
 def transform_data(df : pd.DataFrame):
     # data in duration, # gpus, # nodes
@@ -77,12 +76,14 @@ class Synthetic_Job_Generator:
             self.time_until_next_job -= 1
 
 class Synthetic_Job_Generator2: 
-    def __init__(self): 
+    def __init__(self, WEIGHTS : [], JOBS_PER_HOUR : float = 3.7):
         self.internal_id = 1000
-        self.reset_timer() 
+        self.JOBS_PER_HOUR = JOBS_PER_HOUR
+        self.WEIGHTS = WEIGHTS
+        self.reset_timer()
     
     def reset_timer(self): 
-        self.time_until_next_job = int(ss.poisson.rvs(mu=3600 / JOBS_PER_HOUR))
+        self.time_until_next_job = int(ss.poisson.rvs(mu=3600 / self.JOBS_PER_HOUR))
 
     def create_job(self, timestamp, get_params = False):
         duration = 0
@@ -91,18 +92,8 @@ class Synthetic_Job_Generator2:
         else: 
             duration = ss.uniform.rvs(loc = 3, scale = 1, size = 1)[0]
         duration = int(duration * 3600)
-        
-        r = random.random() 
-        num_gpus = 0 
-        if r < .7: 
-            num_gpus = 1
-        elif r < .95: 
-            if random.random() < .5: 
-                num_gpus = 2
-            else: 
-                num_gpus = 4 
-        else: 
-            num_gpus = 8 
+
+        num_gpus = random.choices([1,2,4,8], self.WEIGHTS, k=1)[0]
 
         model_type_index = random.randrange(6)
 

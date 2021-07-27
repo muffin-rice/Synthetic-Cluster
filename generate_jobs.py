@@ -4,7 +4,7 @@ import pickle
 NUM_JOBS_TO_GENERATE = 200
 
 if __name__ == '__main__':
-    SJG = Synthetic_Job_Generator2()
+    SJG = Synthetic_Job_Generator2(WEIGHTS= [.5, .2, .2, .1], JOBS_PER_HOUR=3.7)
     t = 1
     jobs = [SJG.create_job(0, get_params=True)]
 
@@ -16,4 +16,4 @@ if __name__ == '__main__':
 
     print(t)
 
-    pickle.dump(jobs, open('data/job_simul_1.pkl', 'wb'))
+    pickle.dump(jobs, open('data/Job-Simuls/job_simul_x.pkl', 'wb'))

@@ -155,7 +155,8 @@ class Cluster:
         self.record_jobs()
 
     @property
-    def free_resources(self): 
+    def free_resources(self):
+        '''free resources in machine_id : [job_id] format to be passed into scheduler'''
         fresources = {}
         for mach in self._machine_array: 
             if mach.free_whole_gpus: 

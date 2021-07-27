@@ -32,8 +32,8 @@ class GPU:
         if self.update_i <= 0:
             curr_job_stats = [job.id for job in self.current_jobs]
             curr_job_stats.append(self.gpu_utilization)
-            self.update_i = UPDATE_FREQ
             self.job_history.append(curr_job_stats)
+            self.update_i = UPDATE_FREQ
         else:
             self.update_i -= 1
 
@@ -85,9 +85,9 @@ class GPU:
 
     @property
     def total_gpu_usage_history(self):
-        '''usage=1 when there is a single job (ignoring packing), percentage over total history'''
+        '''usage=1 when there is at least 1 job (ignoring packing), percentage over total history'''
         try:
-            return sum(len(x) != 1 for x in self.job_history) / len(self.job_history)
+            return sum(len(x) != 0 for x in self.job_history) / len(self.job_history)
         except:
             return 0
 
@@ -176,3 +176,7 @@ class Machine:
                 arr.append([gpu.id, gpu.gpu_utilization])
 
         return arr
+
+    @property
+    def gpu_util_history(self):
+        return [gpu.total_gpu_usage_history for gpu in self.gpus.values()]
